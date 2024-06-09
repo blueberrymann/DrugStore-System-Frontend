@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>个人信息</title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+    <el-container>
+        <el-header></el-header>
+        <div style="margin: 50px;"></div>
+        <el-main>
+            <div id="app">
+                <div style="margin: 0 200px;">
+                    <el-descriptions class="margin-top" title="个人信息中心" :column="1" :size="size" border>
+                        <template slot="extra">
+							<el-button type="primary" plain size="small" onclick="window.location.href='DrugStoreEditUser.html'">更改信息</el-button>
+							<el-button type="primary" plain size="small" @click="goBackToMain()">返回</el-button>
+                        </template>
+                        <el-descriptions-item>
+                            <template slot="label">
+                                <i class="el-icon-user"></i>
+                                用户名
+                            </template>
+                            {{login_user.userName}}
+                        </el-descriptions-item>
+                        
+                        <el-descriptions-item>
+                            <template slot="label">
+                                <i class="el-icon-location-outline"></i>
+                                性别
+                            </template>
+                            {{login_user.userSex}}
+                        </el-descriptions-item>
+                        <el-descriptions-item>
+                            <template slot="label">
+                                <i class="el-icon-tickets"></i>
+                                电话号码
+                            </template>
+                            {{login_user.userTel}}
+                        </el-descriptions-item>
+                    </el-descriptions>
+                </div>
+            </div>
+        </el-main>
+    </el-container>
+
+    <script src="./js/axios.min.js"></script>
+    <script src="./js/vue.js"></script>
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script>
+        axios.defaults.withCredentials = true;
+        new Vue({
+            el: '#app',
+            data: {
+                login_user: {},
+                size: ''
+            },
+            methods: {
+                loadUser() {
+                    axios.get('http://localhost:8080/user/download').then(res => {
+                        if (res.data.isOk) {
+                            this.login_user = res.data.currentUser;
+                        }
+                    })
+                },
+                goBackToMain() {
+                    axios.get('http://localhost:8080/downloadPage').then(res => {
+                        const mainpage = res.data.current_page;
+                        location.href = mainpage;
+                    })
+                }
+            },
+            created() {
+                this.loadUser();
+            }
+        });
+    </script>
+</body>
+</html>

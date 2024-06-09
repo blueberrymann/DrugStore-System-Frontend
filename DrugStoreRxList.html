@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>处方管理界面</title>
+		<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+		<style>
+			.header {
+				background-color: #409EFF;
+				color: white;
+				display: flex;
+				align-items: center;
+				/* 垂直居中 */
+				justify-content: space-between;
+				/* 分隔按钮和文字 */
+				padding: 0 20px;
+				/* 添加左右内边距 */
+				height: 80px;
+				/* 高度调整 */
+			}
+
+			.aside {
+				background-color: #DCDFE6;
+				color: white;
+				line-height: 200px;
+				height: calc(100vh - 80px);
+				/* Adjusted for the increased header height */
+				padding-top: 20px;
+			}
+
+			.button-container-aside {
+				display: flex;
+				flex-direction: column;
+				/* 垂直排列按钮 */
+				gap: 10px;
+				/* 按钮之间的间距 */
+				padding: 10px;
+			}
+
+			.button-container-aside el-button {
+				width: 100%;
+				/* 按钮宽度设为 100% */
+			}
+
+			.main {
+				background-color: #FFF;
+				height: calc(100vh - 80px);
+				/* Adjusted for the increased header height */
+				padding: 20px;
+			}
+
+			.button-container {
+				text-align: right;
+				/* 水平居右 */
+				margin-top: 20px;
+				/* 与上面的表格留出空隙 */
+			}
+
+			.el-drawer .el-descriptions {
+				padding: 20px;
+			}
+
+			.el-descriptions-item__content {
+				white-space: normal;
+				word-break: break-all;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			<el-container>
+				<el-header class="header">
+					<div>
+						<el-button type="primary" plain
+							onclick="window.location.href='DrugStoreEmpList.html'">员工管理</el-button>
+						<el-button type="primary" plain
+							onclick="window.location.href='DrugStoreDrugList.html'">药品管理</el-button>
+						<el-button type="primary" plain
+							onclick="window.location.href='DrugStoreRxList.html'">开处方</el-button>
+					</div>
+					<div>
+						<el-link type="warning" @click="uploadPage('DrugStoreRxList.html')"
+							:underline="false">{{login_user.userName}}</el-link>,欢迎使用药房管理系统！
+						<!-- <el-button type="danger" plain>退出登录</el-button> -->
+
+						<el-popconfirm :title="`确定退出登录？`" @confirm="logout()">
+							<el-button type="danger" plain slot="reference">退出登录</el-button>
+						</el-popconfirm>
+					</div>
+				</el-header>
+				<el-container>
+					<el-aside width="200px" class="aside">
+						<div class="button-container-aside">
+							<el-button type="primary" plain
+								onclick="window.location.href='DrugStoreAddRx.html'">添加新处方</el-button>
+						</div>
+					</el-aside>
+					<el-main class="main">
+						<el-table :data="rxes" stripe style="width: 100%">
+							<el-table-column prop="rxDocname" label="主治医师"></el-table-column>
+							<el-table-column prop="rxPatname" label="患者"></el-table-column>
+
+							<el-table-column label="查看处方详情" width="125">
+								<template slot-scope="scope">
+									<el-button type="primary" icon="el-icon-info" circle
+										@click="uploadRxDetail(scope.row.rxId);drawer = true">
+									</el-button>
+								</template>
+							</el-table-column>
+
+							<el-table-column label="操作" width="125">
+								<template slot-scope="scope">
+									<el-popconfirm :title="`确定删除处方？`" @confirm="delRx(scope.row.rxId)">
+										<el-button type="danger" circle icon="el-icon-delete"
+											slot="reference"></el-button>
+									</el-popconfirm>
+								</template>
+							</el-table-column>
+
+							<el-table-column label="修改处方信息" width="125">
+								<template slot-scope="scope">
+									<el-popconfirm :title="`确定修改处方信息？`" @confirm="uploadRx(scope.row.rxId)">
+										<el-button type="primary" icon="el-icon-edit" circle
+											slot="reference"></el-button>
+									</el-popconfirm>
+								</template>
+							</el-table-column>
+						</el-table>
+					</el-main>
+				</el-container>
+			</el-container>
+			<el-drawer title="处方详情" :visible.sync="drawer" :direction="direction" :before-close="handleClose"
+				:size="300" class="drawer-padding">
+				<div style="margin: 0 200px;">
+					<el-descriptions class="margin-top" :column="2" :size="size" border>
+						<el-descriptions-item>
+							<template slot="label">
+								<i class="el-icon-user"></i> 主治医师姓名
+							</template>
+							<strong>{{ currentRx.rxDocname }}</strong>
+
+						</el-descriptions-item>
+						<el-descriptions-item>
+							<template slot="label">
+								<i class="el-icon-user-solid"></i> 患者姓名
+							</template>
+							<strong>{{ currentRx.rxPatname }}</strong>
+						</el-descriptions-item>
+						<el-descriptions-item>
+							<template slot="label">
+								<i class="el-icon-first-aid-kit"></i> 药品名称
+							</template>
+							<strong>{{ currentRx.rxDrugname }}</strong>
+						</el-descriptions-item>
+						<el-descriptions-item>
+							<template slot="label">
+								<i class="el-icon-medal-1"></i> 药品数量
+							</template>
+							<strong>{{ currentRx.rxDrugnum }}</strong>
+						</el-descriptions-item>
+						<el-descriptions-item>
+							<template slot="label">
+								<i class="el-icon-document"></i> 处方内容
+							</template>
+							<strong>{{ currentRx.rxNotes }}</strong>
+						</el-descriptions-item>
+					</el-descriptions>
+				</div>
+
+			</el-drawer>
+		</div>
+
+		<script src="./js/axios.min.js"></script>
+		<script src="./js/vue.js"></script>
+		<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+		<script>
+			axios.defaults.withCredentials = true;
+			new Vue({
+				el: '#app',
+				data: {
+					rxes: [],
+					login_user: {},
+					currentRx: {},
+					drawer: false,
+					direction: 'ttb',
+					size: ''
+				},
+				methods: {
+					loadRxes() {
+						axios.get('http://localhost:8080/rx/list').then(res => {
+							if (res.data.isOk) {
+								this.$message({
+									message: res.data.msg,
+									type: 'success'
+								});
+								this.rxes = res.data.rxes;
+							}
+						})
+					},
+					loadUser() {
+						axios.get('http://localhost:8080/rx/list').then(res => {
+							if (res.data.isOk) {
+								this.login_user = res.data.login_user;
+							}
+						})
+					},
+					delRx(id) {
+						axios.get('http://localhost:8080/rx/del', {
+							params: {
+								id
+							}
+						}).then(res => {
+							alert(res.data.msg);
+							this.loadRxes();
+						})
+					},
+					uploadRx(id) {
+						axios.get('http://localhost:8080/rx/upload', {
+							params: {
+								id
+							}
+						}).then(res => {
+							// alert(res.data.msg);
+							location.href = 'DrugStoreEditRx.html';
+						})
+					},
+					handleClose(done) {
+						done();
+					},
+					uploadRxDetail(id) {
+						axios.get('http://localhost:8080/rx/viewdetail', {
+							params: {
+								id
+							}
+						}).then(res => {
+							if (res.data.isOk) {
+								this.currentRx = res.data.currentRx;
+							}
+						})
+					},
+					uploadPage(pagename) {
+						axios.get('http://localhost:8080/uploadPage', {
+							params: {
+								pagename
+							}
+						}).then(res => {
+							// alert(res.data.msg);
+							location.href = 'DrugStorePrivateInfo.html';
+							// this.loadDrugs();
+						})
+					},
+					logout() {
+						axios.get('http://localhost:8080/logout').then(res => {
+							if (res.data.isOk) {
+								location.href = 'DrugStoreLogin.html';
+							} else {
+								alert(res.data.msg);
+							}
+						})
+					}
+				},
+				created() {
+					this.loadRxes();
+					this.loadUser();
+				}
+			})
+		</script>
+	</body>
+</html>

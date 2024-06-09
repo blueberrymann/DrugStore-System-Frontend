@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>修改职工信息</title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+
+<el-container>
+    <el-header>
+    </el-header>
+
+    <div style="margin: 50px;"></div>
+    <el-main>
+        <div id="app">
+            <el-row>
+                <el-col :offset="9" :span="6">
+                    <div style="border: 2px solid #cde6ff; border-radius: 15px; padding: 20px; background-color: #cde6ff;">
+                        <h2 style="text-align: center; color: royalblue;">修改职工信息</h2>
+                        <el-form :label-position="labelPosition" label-width="80px" :model="empForm" :rules="rules" ref="empForm">
+                            <el-form-item label="姓名" prop="empName">
+                                <el-input v-model="empForm.empName"></el-input>
+                            </el-form-item>
+                            <el-form-item label="年龄" prop="empAge">
+                                <el-input v-model="empForm.empAge"></el-input>
+                            </el-form-item>
+                            <el-form-item label="电话号码" prop="empTel">
+                                <el-input v-model="empForm.empTel"></el-input>
+                            </el-form-item>
+                            <el-form-item label="职位" prop="empLoc">
+                                <el-input v-model="empForm.empLoc"></el-input>
+                            </el-form-item>
+                            <el-form-item style="text-align: center;">
+                                <el-button type="primary" @click.prevent="submitForm('empForm')">保存员工信息</el-button>
+                            </el-form-item>
+                        </el-form>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+    </el-main>
+</el-container>
+
+<script src="./js/axios.min.js"></script>
+<script src="./js/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script>
+    axios.defaults.withCredentials = true;
+    new Vue({
+        el: '#app',
+        data: {
+            labelPosition: 'top',
+            currentEmp: {},
+            empForm: {
+                empName: '',
+                empAge: '',
+                empTel: '',
+                empLoc: ''
+            },
+            rules: {
+                empName: [
+                    { required: true, message: '请输入姓名', trigger: 'blur' }
+                ],
+                empAge: [
+                    { required: true, message: '请输入年龄', trigger: 'blur' },
+                    { validator: (rule, value, callback) => {
+                        const age = Number(value);
+                        if (!Number.isInteger(age) || age <= 0) {
+                            callback(new Error('年龄必须为正整数'));
+                        } else {
+                            callback();
+                        }
+                    }, trigger: 'blur' }
+                ],
+                empTel: [
+                    { required: true, message: '请输入电话号码', trigger: 'blur' },
+                    { validator: (rule, value, callback) => {
+                        const regex = /^\d{11}$/;
+                        if (!regex.test(value)) {
+                            callback(new Error('电话号码必须为11位数字'));
+                        } else {
+                            callback();
+                        }
+                    }, trigger: 'blur' }
+                ],
+                empLoc: [
+                    { required: true, message: '请输入职位', trigger: 'blur' }
+                ]
+            }
+        },
+        methods: {
+            loadEmp() {
+                axios.get('http://localhost:8080/emp/download').then(res => {
+                    if (res.data.isOk) {
+                        this.currentEmp = res.data.currentEmp;
+                        this.initializeEmpForm();
+                    }
+                });
+            },
+            initializeEmpForm() {
+                this.empForm.empName = this.currentEmp.empName;
+                this.empForm.empAge = this.currentEmp.empAge;
+                this.empForm.empTel = this.currentEmp.empTel;
+                this.empForm.empLoc = this.currentEmp.empLoc;
+            },
+            updateEmp() {
+                let fd = new FormData();
+                fd.append('empId', this.currentEmp.empId);
+                fd.append('empName', this.empForm.empName);
+                fd.append('empAge', this.empForm.empAge);
+                fd.append('empTel', this.empForm.empTel);
+                fd.append('empLoc', this.empForm.empLoc);
+                axios.post('http://localhost:8080/emp/update', fd).then(res => {
+                    if (res.data.isOk) {
+                        alert(res.data.msg);
+                        location.href = 'DrugStoreEmpList.html';
+                    }
+                });
+            },
+            submitForm(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        this.updateEmp();
+                    } else {
+                        this.$message.error("请按照要求修改职员信息！");
+                        console.log('表单验证失败');
+                        return false;
+                    }
+                });
+            }
+        },
+        created() {
+            this.loadEmp();
+        }
+    })
+</script>
+</body>
+</html>

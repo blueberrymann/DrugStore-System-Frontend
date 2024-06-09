@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>修改处方信息</title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+    <el-container>
+        <el-header></el-header>
+        <div style="margin: 50px;"></div>
+        <el-main>
+            <div id="app">
+                <el-row>
+                    <el-col :offset="9" :span="6">
+                        <div style="border: 2px solid #cde6ff; border-radius: 15px; padding: 20px; background-color: #cde6ff;">
+                            <h2 style="text-align: center; color: royalblue;">修改处方信息</h2>
+                            <el-form :label-position="labelPosition" label-width="80px" :model="rxForm" :rules="rules" ref="rxForm">
+                                <el-form-item label="医师姓名" prop="rxDocname">
+                                    <el-select v-model="rxForm.rxDocname" placeholder="请选择">
+                                        <el-option v-for="employee in employees" :key="employee.value" :label="employee.label" :value="employee.value"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="患者姓名" prop="rxPatname">
+                                    <el-input v-model="rxForm.rxPatname"></el-input>
+                                </el-form-item>
+                                <el-form-item label="药品名称" prop="rxDrugname">
+                                    <el-select v-model="rxForm.rxDrugname" filterable clearable placeholder="请选择">
+                                        <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="药品数量" prop="rxDrugnum">
+                                    <el-input v-model="rxForm.rxDrugnum"></el-input>
+                                </el-form-item>
+                                <el-form-item label="处方内容" prop="rxNotes">
+                                    <el-input v-model="rxForm.rxNotes"></el-input>
+                                </el-form-item>
+                                <el-form-item style="text-align: center;">
+                                    <el-button type="primary" @click.prevent="updateRx()">修改处方信息</el-button>
+                                </el-form-item>
+                            </el-form>
+                        </div>
+                    </el-col>
+                </el-row>
+            </div>
+        </el-main>
+    </el-container>
+
+    <script src="./js/axios.min.js"></script>
+    <script src="./js/vue.js"></script>
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script>
+        axios.defaults.withCredentials = true;
+        new Vue({
+            el: '#app',
+            data: {
+                labelPosition: 'left',
+                options: [],
+                rxForm: {
+                    rxDocname: '',
+                    rxPatname: '',
+                    rxDrugname: '',
+                    rxDrugnum: '',
+                    rxNotes: ''
+                },
+                rules: {
+                    rxDocname: [
+                        { required: true, message: '请选择主治医师姓名', trigger: 'change' }
+                    ],
+                    rxPatname: [
+                        { required: true, message: '请输入患者姓名', trigger: 'blur' }
+                    ],
+                    rxDrugname: [
+                        { required: true, message: '请选择药品名称', trigger: 'change' }
+                    ],
+                    rxDrugnum: [
+                        { required: true, message: '请输入药品数量', trigger: 'blur' },
+                        { type: 'number', message: '药品数量必须为正整数', trigger: 'blur', transform(value) {
+                            return Number(value);
+                        }, validator: (rule, value, callback) => {
+                            if (!Number.isInteger(value) || value <= 0) {
+                                callback(new Error('药品数量必须为正整数'));
+                            } else {
+                                callback();
+                            }
+                        }}
+                    ],
+                    rxNotes: [
+                        { required: true, message: '请输入处方内容', trigger: 'blur' }
+                    ]
+                },
+                drugs: [],
+                emps: [],
+                employees: [],
+                currentRx: {}
+            },
+            methods: {
+                loadEmps() {
+                    axios.get('http://localhost:8080/emp/list').then(res => {
+                        if (res.data.isOk) {
+                            this.emps = res.data.emps;
+                            this.employees = this.emps
+                                .filter(emp => emp.empLoc === '主任医师')
+                                .map(emp => ({
+                                    value: emp.empName,
+                                    label: emp.empName
+                                }));
+                        }
+                    });
+                },
+                loadDrugs() {
+                    axios.get('http://localhost:8080/drug/list').then(res => {
+                        this.drugs = res.data.drugs;
+                        this.options = this.drugs.map(drug => ({
+                            value: drug.drugName,
+                            label: drug.drugName
+                        }));
+                    });
+                },
+                loadRx() {
+                    axios.get('http://localhost:8080/rx/download').then(res => {
+                        if (res.data.isOk) {
+                            this.currentRx = res.data.currentRx;
+                            this.initializeRxForm();
+                        }
+                    });
+                },
+                initializeRxForm() {
+                    this.rxForm.rxDocname = this.currentRx.rxDocname;
+                    this.rxForm.rxPatname = this.currentRx.rxPatname;
+                    this.rxForm.rxDrugname = this.currentRx.rxDrugname;
+                    this.rxForm.rxDrugnum = this.currentRx.rxDrugnum;
+                    this.rxForm.rxNotes = this.currentRx.rxNotes;
+                },
+                updateRx() {
+                    this.$refs.rxForm.validate((valid) => {
+                        if (valid) {
+                            let fd = new FormData();
+                            fd.append('rxId', this.currentRx.rxId);
+                            fd.append('rxDocname', this.rxForm.rxDocname);
+                            fd.append('rxPatname', this.rxForm.rxPatname);
+                            fd.append('rxDrugname', this.rxForm.rxDrugname);
+                            fd.append('rxDrugnum', this.rxForm.rxDrugnum);
+                            fd.append('rxNotes', this.rxForm.rxNotes);
+                            axios.post('http://localhost:8080/rx/update', fd).then(res => {
+                                if (res.data.isOk) {
+                                    alert(res.data.msg);
+                                    location.href = 'DrugStoreRxList.html';
+                                }
+                            });
+                        } else {
+                            this.$message.error("请按照要求修改处方相关信息！");
+                            console.log('error submit!!');
+                            return false;
+                        }
+                    });
+                }
+            },
+            created() {
+                this.loadDrugs();
+                this.loadEmps();
+                this.loadRx();
+            }
+        });
+    </script>
+</body>
+</html>

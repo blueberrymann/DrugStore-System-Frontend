@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>药房管理系统注册界面</title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+    <div style="margin: 100px;"></div>
+    <div id="app">
+        <el-row>
+            <el-col :offset="6" :span="12">
+                <div style="border: 2px solid aquamarine; border-radius: 15px; padding: 20px; background-color: #cde6ff;">
+                    <h2 style="text-align: center; color: royalblue;">注册界面</h2>
+                    <el-form :label-position="labelPosition" label-width="80px" :model="userForm" :rules="rules" ref="userForm">
+                        <el-form-item label="姓名" prop="userName">
+                            <el-input v-model="userForm.userName"></el-input>
+                        </el-form-item>
+                        <el-form-item label="密码" prop="userPwd">
+                            <el-input placeholder="请输入密码" v-model="userForm.userPwd" show-password></el-input>
+                        </el-form-item>
+                        <el-form-item label="性别" prop="userSex">
+                            <template>
+                                <el-radio v-model="userForm.userSex" label="男">男</el-radio>
+                                <el-radio v-model="userForm.userSex" label="女">女</el-radio>
+                            </template>
+                        </el-form-item>
+                        <el-form-item label="电话" prop="userTel">
+                            <el-input v-model="userForm.userTel"></el-input>
+                        </el-form-item>
+                        <el-form-item style="text-align: center;">
+                            <el-button type="primary" @click.prevent="addUser()">添加</el-button>
+                        </el-form-item>
+                    </el-form>
+                </div>
+            </el-col>
+        </el-row>
+    </div>
+
+    <script src="./js/axios.min.js"></script>
+    <script src="./js/vue.js"></script>
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                labelPosition: 'right',
+                userForm: {
+                    userName: '',
+                    userPwd: '',
+                    userSex: '',
+                    userTel: ''
+                },
+                rules: {
+                    userName: [
+                        { required: true, message: '请输入姓名', trigger: 'blur' }
+                    ],
+                    userPwd: [
+                        { required: true, message: '请输入密码', trigger: 'blur' }
+                    ],
+                    userSex: [
+                        { required: true, message: '请选择性别', trigger: 'change' }
+                    ],
+                    userTel: [
+                        { required: true, message: '请输入电话号码', trigger: 'blur' },
+                        { pattern: /^(\d{11})$/, message: '电话号码必须是11位数字', trigger: 'blur' }
+                    ]
+                }
+            },
+            methods: {
+                addUser() {
+                    this.$refs.userForm.validate((valid) => {
+                        if (valid) {
+                            let fd = new FormData();
+                            fd.append('userName', this.userForm.userName);
+                            fd.append('userPwd', this.userForm.userPwd);
+                            fd.append('userSex', this.userForm.userSex);
+                            fd.append('userTel', this.userForm.userTel);
+                            axios.post('http://localhost:8080/register', fd).then(res => {
+                                if (res.data.isOk) {
+                                    alert("注册成功！");
+                                    location.href = 'DrugStoreLogin.html';
+                                }
+                            })
+                        } else {
+                            this.$message.error("请按照要求填写注册信息！");
+                            console.log('表单验证失败');
+                            return false;
+                        }
+                    });
+                }
+            }
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>添加新药品</title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+    <el-container>
+        <el-header></el-header>
+        <div style="margin: 50px;"></div>
+        <el-main>
+            <div id="app">
+                <el-row>
+                    <el-col :offset="9" :span="6">
+                        <div style="border: 2px solid #cde6ff; border-radius: 15px; padding: 20px; background-color: #cde6ff;">
+                            <h2 style="text-align: center; color: royalblue;">添加药品</h2>
+                            <el-form :label-position="labelPosition" label-width="80px" :model="drugForm" :rules="rules" ref="drugForm">
+                                <el-form-item label="药品名称" prop="drugName">
+                                    <el-input v-model="drugForm.drugName"></el-input>
+                                </el-form-item>
+                                <el-form-item label="药品类别" prop="drugCat">
+                                    <template>
+                                        <el-radio v-model="drugForm.drugCat" label="OTC">非处方药</el-radio>
+                                        <el-radio v-model="drugForm.drugCat" label="RX">处方药</el-radio>
+                                    </template>
+                                </el-form-item>
+                                <el-form-item label="药品价格" prop="drugPrice">
+                                    <el-input v-model="drugForm.drugPrice"></el-input>
+                                </el-form-item>
+                                <el-form-item style="text-align: center;">
+                                    <el-button type="primary" @click.prevent="submitForm('drugForm')">添加药品</el-button>
+                                </el-form-item>
+                            </el-form>
+                        </div>
+                    </el-col>
+                </el-row>
+            </div>
+        </el-main>
+    </el-container>
+
+    <script src="./js/axios.min.js"></script>
+    <script src="./js/vue.js"></script>
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script>
+        axios.defaults.withCredentials = true;
+        new Vue({
+            el: '#app',
+            data: {
+                labelPosition: 'top',
+                drugForm: {
+                    drugName: '',
+                    drugCat: '',
+                    drugPrice: ''
+                },
+                rules: {
+                    drugName: [
+                        { required: true, message: '请输入药品名称', trigger: 'blur' }
+                    ],
+                    drugCat: [
+                        { required: true, message: '请选择药品类别', trigger: 'change' }
+                    ],
+                    drugPrice: [
+                        { required: true, message: '请输入药品价格', trigger: 'blur' },
+                        { pattern: /^[1-9]\d*(\.\d{1,2})?$/, message: '药品价格必须为正数且最多保留两位小数', trigger: 'blur' }
+                    ]
+                }
+            },
+            methods: {
+                submitForm(formName) {
+                    this.$refs[formName].validate((valid) => {
+                        if (valid) {
+                            this.addDrug();
+                        } else {
+                            this.$message.error("请按照要求填写新药品信息！");
+                            console.log('表单验证失败');
+                            return false;
+                        }
+                    });
+                },
+                addDrug() {
+                    let fd = new FormData();
+                    fd.append('drugName', this.drugForm.drugName);
+                    fd.append('drugCat', this.drugForm.drugCat);
+                    fd.append('drugPrice', this.drugForm.drugPrice);
+                    axios.post('http://localhost:8080/drug/add', fd).then(res => {
+                        if (res.data.isOk) {
+                            alert(res.data.msg);
+                            location.href = 'DrugStoreDrugList.html';
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

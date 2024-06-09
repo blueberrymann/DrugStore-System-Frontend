@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>药品管理界面</title>
+		<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+		<style>
+			.header {
+				background-color: #409EFF;
+				color: white;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 0 20px;
+				height: 80px;
+			}
+
+			.aside {
+				background-color: #DCDFE6;
+				color: white;
+				line-height: 200px;
+				height: calc(100vh - 80px);
+				padding-top: 20px;
+			}
+
+			.button-container-aside {
+				display: flex;
+				flex-direction: column;
+				gap: 10px;
+				padding: 10px;
+			}
+
+			.button-container-aside el-button {
+				width: 100%;
+			}
+
+			.main {
+				background-color: #FFF;
+				height: calc(100vh - 80px);
+				padding: 20px;
+			}
+
+			.button-container {
+				text-align: right;
+				margin-top: 20px;
+			}
+
+			.fixed-height-row .el-table__row {
+				height: 70px;
+				/* 设置固定行高，根据实际情况调整 */
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			<el-container>
+				<el-header class="header">
+					<div>
+						<el-button type="primary" plain
+							onclick="window.location.href='DrugStoreEmpList.html'">员工管理</el-button>
+						<el-button type="primary" plain
+							onclick="window.location.href='DrugStoreDrugList.html'">药品管理</el-button>
+						<el-button type="primary" plain
+							onclick="window.location.href='DrugStoreRxList.html'">开处方</el-button>
+					</div>
+					<div>
+						<el-link type="warning" @click="uploadPage('DrugStoreDrugList.html')"
+							:underline="false">{{login_user.userName}}</el-link>,
+						欢迎使用药房管理系统！
+
+						<el-popconfirm :title="`确定退出登录？`" @confirm="logout()">
+							<el-button type="danger" plain slot="reference">退出登录</el-button>
+						</el-popconfirm>
+					</div>
+				</el-header>
+				<el-container>
+					<el-aside width="200px" class="aside">
+						<div class="button-container-aside">
+							<el-button type="primary" plain
+								onclick="window.location.href='DrugStoreAddDrug.html'">添加新药品</el-button>
+						</div>
+					</el-aside>
+					<el-main class="main">
+						<div class="block">
+							<span class="demonstration">
+								<el-table :data="pagedDrugs" stripe style="width: 100%" class="fixed-height-row">
+									<el-table-column prop="drugId" label="药品序号">
+										<template slot-scope="scope">
+											<span v-if="!scope.row.isPlaceholder">{{ scope.row.drugId }}</span>
+										</template>
+									</el-table-column>
+									<el-table-column prop="drugName" label="药品名称">
+										<template slot-scope="scope">
+											<span v-if="!scope.row.isPlaceholder">{{ scope.row.drugName }}</span>
+										</template>
+									</el-table-column>
+									<el-table-column prop="drugCat" label="药品种类">
+										<template slot-scope="scope">
+											<span v-if="!scope.row.isPlaceholder">{{ scope.row.drugCat }}</span>
+										</template>
+									</el-table-column>
+									<el-table-column prop="drugPrice" label="药品价格(元)">
+										<template slot-scope="scope">
+											<span v-if="!scope.row.isPlaceholder">{{ scope.row.drugPrice }}</span>
+										</template>
+									</el-table-column>
+									<el-table-column label="删除" width="100">
+										<template slot-scope="scope">
+											<span v-if="!scope.row.isPlaceholder">
+												<el-popconfirm :title="`确定删除药品${scope.row.drugName}？`"
+													@confirm="delDrug(scope.row.drugId)">
+													<el-button type="danger" circle icon="el-icon-delete"
+														slot="reference"></el-button>
+												</el-popconfirm>
+											</span>
+										</template>
+									</el-table-column>
+									<el-table-column label="修改" width="100">
+										<template slot-scope="scope">
+											<span v-if="!scope.row.isPlaceholder">
+												<el-popconfirm :title="`确定修改药品${scope.row.drugName}信息？`"
+													@confirm="uploadDrug(scope.row.drugId)">
+													<el-button type="primary" icon="el-icon-edit" circle
+														slot="reference"></el-button>
+												</el-popconfirm>
+											</span>
+										</template>
+									</el-table-column>
+								</el-table>
+
+
+							</span>
+							<el-pagination layout="prev, pager, next" :total="drugs.length" :page-size="5"
+								:current-page="currentPage" @current-change="handlePageChange">
+							</el-pagination>
+						</div>
+					</el-main>
+				</el-container>
+			</el-container>
+		</div>
+
+		<script src="./js/axios.min.js"></script>
+		<script src="./js/vue.js"></script>
+		<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+		<script>
+			axios.defaults.withCredentials = true;
+			new Vue({
+				el: '#app',
+				data: {
+					drugs: [],
+					login_user: {},
+					currentPage: 1,
+					pageSize: 5
+				},
+				computed: {
+					pagedDrugs() {
+						const start = (this.currentPage - 1) * this.pageSize;
+						const end = this.currentPage * this.pageSize;
+						let pageData = this.drugs.slice(start, end);
+
+						// 补足空行
+						while (pageData.length < this.pageSize) {
+							pageData.push({
+								isPlaceholder: true
+							}); // 添加带标记的空对象
+						}
+
+						return pageData;
+					}
+				},
+				methods: {
+					loadDrugs() {
+						axios.get('http://localhost:8080/drug/list').then(res => {
+							if (res.data.isOk) {
+								this.drugs = res.data.drugs;
+
+								// 如果删除后当前页码超出总页数，调整页码
+								const totalItems = this.drugs.length; // 总条数
+								const totalPages = Math.ceil(totalItems / this.pageSize); // 总页数
+
+								if (this.currentPage > totalPages) {
+									this.currentPage = totalPages; // 将页码调整为最后一页
+								}
+							}
+						});
+					},
+					loadUser() {
+						axios.get('http://localhost:8080/drug/list').then(res => {
+							if (res.data.isOk) {
+								this.login_user = res.data.login_user;
+							}
+						});
+					},
+					delDrug(id) {
+						axios.get('http://localhost:8080/drug/del', {
+							params: {
+								id
+							}
+						}).then(res => {
+							alert(res.data.msg);
+
+							// 重新加载数据前，检查是否需要调整当前页码
+							const totalItems = this.drugs.length; // 总条数
+							const totalPages = Math.ceil(totalItems / this.pageSize); // 总页数
+							const currentPageItems = this.drugs.slice((this.currentPage - 1) * this.pageSize,
+								this.currentPage * this.pageSize);
+
+							if (currentPageItems.length === 1 && this.currentPage > 1) {
+								this.currentPage--; // 如果当前页只有一个药物并且不是第一页，则减少页码
+							}
+
+							// 重新加载数据
+							this.loadDrugs();
+						});
+					},
+					uploadDrug(id) {
+						axios.get('http://localhost:8080/drug/upload', {
+							params: {
+								id
+							}
+						}).then(res => {
+							location.href = 'DrugStoreEditDrug.html';
+						});
+					},
+					uploadPage(pagename) {
+						axios.get('http://localhost:8080/uploadPage', {
+							params: {
+								pagename
+							}
+						}).then(res => {
+							location.href = 'DrugStorePrivateInfo.html';
+						});
+					},
+					logout() {
+						axios.get('http://localhost:8080/logout').then(res => {
+							if (res.data.isOk) {
+								location.href = 'DrugStoreLogin.html';
+							} else {
+								alert(res.data.msg);
+							}
+						});
+					},
+					handlePageChange(page) {
+						this.currentPage = page;
+					}
+				},
+				created() {
+					this.loadDrugs();
+					this.loadUser();
+				}
+			});
+		</script>
+	</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>员工管理界面</title>
+		<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+		<style>
+			.header {
+				background-color: #409EFF;
+				color: white;
+				display: flex;
+				align-items: center;
+				/* 垂直居中 */
+				justify-content: space-between;
+				/* 分隔按钮和文字 */
+				padding: 0 20px;
+				/* 添加左右内边距 */
+				height: 80px;
+				/* 高度调整 */
+			}
+
+			.aside {
+				background-color: #DCDFE6;
+				color: white;
+				line-height: 200px;
+				height: calc(100vh - 80px);
+				/* Adjusted for the increased header height */
+				padding-top: 20px;
+			}
+
+			.button-container-aside {
+				display: flex;
+				flex-direction: column;
+				/* 垂直排列按钮 */
+				gap: 10px;
+				/* 按钮之间的间距 */
+				padding: 10px;
+			}
+
+			.main {
+				background-color: #FFF;
+				height: calc(100vh - 80px);
+				/* Adjusted for the increased header height */
+				padding: 20px;
+			}
+
+			.button-container {
+				text-align: right;
+				/* 水平居右 */
+				margin-top: 20px;
+				/* 与上面的表格留出空隙 */
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			<el-container>
+				<el-header class="header">
+					<div>
+						<el-button type="primary" plain
+							onclick="window.location.href='DrugStoreEmpList.html'">员工管理</el-button>
+						<el-button type="primary" plain
+							onclick="window.location.href='DrugStoreDrugList.html'">药品管理</el-button>
+						<el-button type="primary" plain
+							onclick="window.location.href='DrugStoreRxList.html'">开处方</el-button>
+					</div>
+
+					<div>
+						<el-link type="warning" @click="uploadPage('DrugStoreEmpList.html')"
+							:underline="false">{{login_user.userName}}</el-link>,欢迎使用药房管理系统！
+
+						<el-popconfirm :title="`确定退出登录？`" @confirm="logout()">
+							<el-button type="danger" plain slot="reference">退出登录</el-button>
+						</el-popconfirm>
+
+
+					</div>
+
+				</el-header>
+				<el-container>
+					<el-aside width="200px" class="aside">
+						<div class="button-container-aside">
+							<el-button type="primary" plain
+								onclick="window.location.href='DrugStoreAddEmp.html'">添加新员工</el-button>
+						</div>
+					</el-aside>
+					<el-main class="main">
+						<el-table :data="emps" stripe style="width: 100%">
+							<el-table-column prop="empId" label="员工序号"></el-table-column>
+							<el-table-column prop="empName" label="员工姓名"></el-table-column>
+							<el-table-column prop="empAge" label="员工年龄"></el-table-column>
+							<el-table-column prop="empTel" label="员工电话"></el-table-column>
+							<el-table-column prop="empLoc" label="员工职位"></el-table-column>
+
+							<el-table-column label="操作" width="100">
+								<template slot-scope="scope">
+									<el-popconfirm :title="`确定辞退员工${scope.row.empName}？`"
+										@confirm="delEmp(scope.row.empId)">
+										<el-button type="danger" circle icon="el-icon-delete"
+											slot="reference"></el-button>
+									</el-popconfirm>
+								</template>
+							</el-table-column>
+
+							<el-table-column label="操作" width="100">
+								<template slot-scope="scope">
+									<el-popconfirm :title="`确定修改员工${scope.row.empName}信息？`"
+										@confirm="uploadEmp(scope.row.empId)">
+										<el-button type="primary" icon="el-icon-edit" circle
+											slot="reference"></el-button>
+									</el-popconfirm>
+								</template>
+							</el-table-column>
+						</el-table>
+						<div class="button-container">
+						</div>
+					</el-main>
+				</el-container>
+			</el-container>
+		</div>
+
+		<script src="./js/axios.min.js"></script>
+		<script src="./js/vue.js"></script>
+		<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+		<script>
+			axios.defaults.withCredentials = true;
+			new Vue({
+				el: '#app',
+				data: {
+					emps: [],
+					login_user: {}
+				},
+				methods: {
+					loadEmps() {
+						axios.get('http://localhost:8080/emp/list').then(res => {
+							// this.$message(res.data.msg);
+							if (res.data.isOk) {
+								this.$message({
+									message: res.data.msg,
+									type: 'success'
+								});
+								this.emps = res.data.emps;
+							}
+						})
+					},
+					loadUser() {
+						axios.get('http://localhost:8080/emp/list').then(res => {
+							if (res.data.isOk) {
+								this.login_user = res.data.login_user;
+							}
+							this.login_user = res.data.login_user;
+						})
+					},
+					uploadEmp(id) {
+						axios.get('http://localhost:8080/emp/upload', {
+							params: {
+								id
+							}
+						}).then(res => {
+							// alert(res.data.msg);
+							location.href = 'DrugStoreEditEmp.html';
+							// this.loadDrugs();
+						})
+					},
+					delEmp(id) {
+						axios.get('http://localhost:8080/emp/del', {
+							params: {
+								id
+							}
+						}).then(res => {
+							alert(res.data.msg);
+							this.loadEmps();
+						})
+					},
+					uploadPage(pagename) {
+						axios.get('http://localhost:8080/uploadPage', {
+							params: {
+								pagename
+							}
+						}).then(res => {
+							// alert(res.data.msg);
+							location.href = 'DrugStorePrivateInfo.html';
+							// this.loadDrugs();
+						})
+					},
+					logout() {
+						axios.get('http://localhost:8080/logout').then(res => {
+							if (res.data.isOk) {
+								location.href = 'DrugStoreLogin.html';
+							} else {
+								alert(res.data.msg);
+							}
+						})
+					}
+				},
+				created() {
+					this.loadEmps();
+					this.loadUser();
+				}
+			})
+		</script>
+	</body>
+</html>

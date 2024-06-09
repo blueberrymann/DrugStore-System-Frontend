@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>个人信息编辑界面</title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+    <div style="margin: 100px;"></div>
+    <div id="app">
+        <el-row>
+            <el-col :offset="6" :span="12">
+                <div style="border: 2px solid #cde6ff; border-radius: 15px; padding: 20px; background-color: #cde6ff;">
+                    <h2 style="text-align: center; color: royalblue;">修改个人信息</h2>
+                    <el-form :label-position="labelPosition" label-width="80px" :model="userForm" :rules="rules" ref="userForm">
+                        <el-form-item label="姓名" prop="userName">
+                            <el-input v-model="userForm.userName"></el-input>
+                        </el-form-item>
+                        <el-form-item label="性别" prop="userSex">
+                            <template>
+                                <el-radio v-model="userForm.userSex" label="男">男</el-radio>
+                                <el-radio v-model="userForm.userSex" label="女">女</el-radio>
+                            </template>
+                        </el-form-item>
+                        <el-form-item label="电话" prop="userTel">
+                            <el-input v-model="userForm.userTel"></el-input>
+                        </el-form-item>
+                        <el-form-item style="text-align: center;">
+                            <el-button type="primary" @click.prevent="updateUser()">保存用户信息</el-button>
+                        </el-form-item>
+                    </el-form>
+                </div>
+            </el-col>
+        </el-row>
+    </div>
+
+    <script src="./js/axios.min.js"></script>
+    <script src="./js/vue.js"></script>
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script>
+        axios.defaults.withCredentials = true;
+        new Vue({
+            el: '#app',
+            data: {
+                labelPosition: 'top',
+                login_user: {},
+                userForm: {
+                    userName: '',
+                    userSex: '',
+                    userTel: ''
+                },
+                rules: {
+                    userName: [
+                        { required: true, message: '请输入姓名', trigger: 'blur' }
+                    ],
+                    userSex: [
+                        { required: true, message: '请选择性别', trigger: 'change' }
+                    ],
+                    userTel: [
+                        { required: true, message: '请输入电话号码', trigger: 'blur' },
+                        { pattern: /^(\d{11})$/, message: '电话号码必须是11位数字', trigger: 'blur' }
+                    ]
+                }
+            },
+            methods: {
+                loadUser() {
+                    axios.get('http://localhost:8080/user/download').then(res => {
+                        if (res.data.isOk) {
+                            this.login_user = res.data.currentUser;
+                            // 将 login_user 的数据加载到 userForm 中
+                            this.userForm.userName = this.login_user.userName;
+                            this.userForm.userSex = this.login_user.userSex;
+                            this.userForm.userTel = this.login_user.userTel;
+                        }
+                    });
+                },
+                updateUser() {
+                    this.$refs.userForm.validate((valid) => {
+                        if (valid) {
+                            let fd = new FormData();
+                            fd.append('userId', this.login_user.userId);
+                            fd.append('userName', this.userForm.userName);
+                            fd.append('userSex', this.userForm.userSex);
+                            fd.append('userTel', this.userForm.userTel);
+                            axios.post('http://localhost:8080/user/update', fd).then(res => {
+                                if (res.data.isOk) {
+                                    alert("修改成功！");
+                                    location.href = 'DrugStorePrivateInfo.html';
+                                }
+                            });
+                        } else {
+                            this.$message.error("请按照要求修改用户信息！");
+                            console.log('表单验证失败');
+                            return false;
+                        }
+                    });
+                }
+            },
+            created() {
+                this.loadUser();
+            }
+        });
+    </script>
+</body>
+</html>
